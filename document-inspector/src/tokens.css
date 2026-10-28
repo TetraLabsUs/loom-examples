@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* The only styling beyond Tailwind utilities. */
+@theme {
+  --color-ground: #f8fafc;
+  --color-panel: #ffffff;
+  --color-line: #e2e8f0;
+  --color-ink: #041522;
+  --color-ink-muted: #64748b;
+  --color-accent: #041522;
+  --radius-base: 4px;
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-ink);
+  background: var(--color-ground);
+}
+
+.panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-base);
+}
+.label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-ink-muted);
+}
+.btn {
+  border-radius: var(--radius-base);
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--color-ink);
+  background: var(--color-ink);
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--color-ink);
+}
