@@ -24,8 +24,8 @@ The SDK is a thin, typed HTTP/SSE/WebSocket client. The server owns all state an
 | Package | What it is |
 |---|---|
 | `@tetralabs/loom` | Framework-agnostic client (fetch-based). Also exports `@tetralabs/loom/admin`. |
-| `@tetralabs/loom-react` | TanStack Query v5 hooks + `LoomProvider`, chat controller. `/admin` subpath for admin hooks. |
-| `@tetralabs/loom-react-ui` | Headless chat + dashboard components / controllers. |
+| `@tetralabs/loom-react` | TanStack Query v5 hooks. Root exports `ClientProvider`/`useClient`; feature hooks live on subpaths (`/chat`, `/sources`, `/documents`, `/chunks`, `/queries`, `/dashboards`, `/completions`, `/audio`, `/jobs`, `/admin`). Hook names have **no** `Loom` prefix. |
+| `@tetralabs/loom-react-ui` | Headless chat + dashboard components. Only `/chat` and `/dashboard` subpaths (+ `/chat.css`). |
 
 ```ts
 import { createLoomClient } from "@tetralabs/loom";
@@ -146,10 +146,47 @@ const loom = createLoomClient({
 
 ---
 
-## 5. React layer
+## 5. React layer (published export names — verified against `node_modules/@tetralabs/*/dist/*.d.ts`, v0.1.0)
 
-- `@tetralabs/loom-react`: `LoomProvider`, then hooks mirroring the client — `useLoomSources`, `useLoomSearch`, `useLoomOverview`, `useLoomPageImage`, `useLoomPageRegions`, `useLoomChatSessions`, `useLoomCreateChatSession`, `useLoomChatMessages`, `useLoomSendChatMessage`, `useLoomChatRuns`, `useLoomChatRun`, `useLoomForkChatSession`, `useLoomChatApprovals`, `useLoomDecideChatApproval`, `useLoomResumeChatRun`, `useLoomCompletion`, `useLoomTranscribeAudio`, `useLoomCatalog`, `useLoomDashboards`, `useLoomDashboardQueries`, plus `/admin` hooks (`useLoomLlmModels`, `useLoomLlmCalls`, `useLoomJobQueues`, `useLoomConfig`, `useLoomApiKeys`, …). `useLoomChatController` / `LoomChatProvider` wrap streaming state.
-- `@tetralabs/loom-react-ui`: headless `LoomChatRoot`, `LoomChatConversation`, composer/messages primitives, `useLoomChatSessionsController`, `useLoomRetrievalScope`, `useLoomChatSharing`; `LoomDashboardRoot`, `LoomDashboardView`, `LoomDashboardBoard`, widget components, `resolveLoomDashboardBindings`.
+**Naming rule:** `@tetralabs/loom` (core) exports `Loom`-prefixed functions/types (`createLoomClient`, `searchLoomChunks`, `LoomSource`…). `@tetralabs/loom-react` **drops the `Loom` prefix** and is split into subpath entry points. `@tetralabs/loom-react-ui` keeps the `Loom` prefix and only has `/chat` and `/dashboard` subpaths (no root import).
+
+### `@tetralabs/loom-react`
+| Import path | Exports |
+|---|---|
+| `@tetralabs/loom-react` | `ClientProvider({ client, children })`, `useClient()` → `LoomClient`, `queryKeys` |
+| `…/chat` | `ChatProvider({ options: LoomChatControllerOptions, children })`, `useChat()` → `ChatController`, `useChatState()`, `useChatActions()`, `useChatActivity()`, `useChatApprovalState()`, `useChatController(options)`; hooks: `useChatSessions`, `useChatSession`, `useCreateChatSession`, `useSendChatMessage`, `useChatMessages`, `useUpdateChatSession`, `useForkChatSession`, `useSetActiveChatMessage`, `useChatRuns`, `useChatRun`, `useChatRunReplays`, `useRerunChatRun`, `useResumeChatRun`, `useCancelChatRun`, `useChatApprovals`, `useDecideChatApproval`, `useChatSessionSharing`, `useReplaceChatSessionSharing`. Types: `ChatMessageView`, `ChatActivityState`, `ChatApprovalState`, `ChatSendOptions`, `ChatCapabilities`, `ChatBranchPosition`… |
+| `…/sources` | `useSources`, `useEntityTypes`, `useIngestStatus`, `useEntitySyncState`, `useEntitySyncStates` |
+| `…/documents` | `useOverview`, `usePageImage`, `usePageRegions` |
+| `…/chunks` | `useSearchChunks`, `useDistanceGraph` |
+| `…/completions` | `useCompletion` |
+| `…/audio` | `useTranscribeAudio` |
+| `…/jobs` | `useRecentJobs` (+ `JobStatusFilter`, `JobTypeFilter`, `RecentJobRow`) |
+| `…/queries` | `useCatalog`, `useQuerySources`, `useCompileQuery`, `useValidateQuery`, `useExplorerRows` |
+| `…/dashboards` | `useDashboards`, `useDashboard`, `useDashboardQueries`, `useDashboardTemplates`, `useDashboardTemplate`, `useCreateDashboard`, `useUpdateDashboard`, `useDeleteDashboard`, `useDashboardSharing`, `useReplaceDashboardSharing` |
+| `…/admin` | `useAdminClient`; models: `useLlmModels`, `useLlmModel`, `useCreate/Update/Delete/TestLlmModel`, `useLlmUseCases`, `useSetLlmUseCaseDefault(s)`; `useLlmCalls`, `useLlmCall`; jobs: `useJobStatus`, `useJobLogs`, `useJobQueue(s)`, `useCreate/Update/DeleteJobQueue`, `useAdd/Update/DeleteJobQueueSchedule`; `useStorageProfile(s)` + CRUD + `useTestStorageProfile`; `useIngestPattern(s)` + CRUD + `usePreviewIngestPattern`; `useSkill(s)` + CRUD, `useChatTools`; `usePlaybook(s)` + CRUD, versions, catalog, search, reindex; sync: `useSyncSchedules`, `useSyncRun(s)`, `useSyncRunItems`, `useStartSyncRun`, `useCancelSyncRun`; quality: `useQualitySummary`, `useQualityReport`, `useQualityGrade`, `usePromoteGeneration`; config: `useConfig`, `useConfigOverrides`, `useUpdateConfig`, `useResetConfig`; `useApiKeys`, `useCreateApiKey`, `useRevokeApiKey`; admin chat: `useAdminChatSessions`, `useAdminChatSession`, `useAdminChatSessionRuns`, `useAdminChatRuns`, `useAdminChatRunTimeline`; `useAdminUserAudit`, `useAdminUserAuditResources`; `useImportDashboards` |
+
+Minimal wiring:
+```tsx
+import { createLoomClient } from "@tetralabs/loom";
+import { ClientProvider } from "@tetralabs/loom-react";
+import { ChatProvider, useChatState, useChatActions } from "@tetralabs/loom-react/chat";
+
+const client = createLoomClient({ baseUrl, getHeaders });
+<QueryClientProvider client={qc}>
+  <ClientProvider client={client}>
+    <ChatProvider options={{ scopes: [{ groupType: "workspace", groupId }] }}>…</ChatProvider>
+  </ClientProvider>
+</QueryClientProvider>
+```
+(`ClientProvider` does not create a TanStack `QueryClient`; you provide one.)
+
+### `@tetralabs/loom-react-ui`
+- `…/chat`: `LoomChatRoot` (+ `useLoomConversation`, `LoomConversation*` types), `LoomChatMessages`, `LoomChatComposer`, `useLoomChatSessionsController`, `useLoomChatSessionActions`, `useLoomChatSharing`, `useLoomRetrievalScope`, `buildLoomRetrievalScope`. Styles: `@tetralabs/loom-react-ui/chat.css`.
+- `…/dashboard`: `LoomDashboardRoot`, `LoomDashboardView`, `LoomDashboard`, `LoomDashboardBoard`, `LoomDashboardBoardView`, `useLoomDashboard`, `useLoomDashboardController`, `resolveLoomDashboardBindings`, `collectLoomDashboardQueryKeys`, `buildLoomDashboardWidgetDescriptors`, Screenboard/Timeboard layouts, widgets (`BarWidget`, `ChangeWidget`, `DonutWidget`, `FunnelWidget`, `GaugeWidget`, `IframeWidget`, `ImageWidget`, `NoteWidget`, `QueryValue`, `ScatterWidget`, `TableWidget`, `TextWidget`, `TimeseriesWidget`, `TopListWidget`, `TreemapWidget`, `WidgetCard`).
+
+### `@tetralabs/loom` (core) entry points
+- `@tetralabs/loom`: `createLoomClient`, `LoomClient`, `LoomTransport`, `LoomApiError`, `LoomHeadersProvider`, all `Loom*` domain types, helpers (`dataTypeKind`, `dataTypeLabel`, `lastDays/lastHours/nextDays`), plus everything from `chatApproval`, `chatTrace`, `display`, `document`, `skillConfiguration` modules.
+- `@tetralabs/loom/admin`: `createLoomAdminClient`, `LoomAdminClient`, admin types (`LlmCall`, `LoomLlmModel`, `LoomLlmUseCase`, `LoomJobQueue`, `LoomStorageProfile`, `LoomIngestPattern`, `LoomSkill`, `LoomPlaybook`, `LoomSyncRun`, `LoomApiKey`, `LoomAppConfig`, …), `loomAuditResourceTypes`.
 
 ---
 
